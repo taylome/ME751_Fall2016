@@ -1,17 +1,18 @@
-classdef Constraint_DP1
-    %Implementation of the DP1 Constraint
+classdef Constraint_CD
+    %Implementation of the CD Constraint
     %ME751 - Homework #5 - Oct 2016
     properties(Constant)
-        type = 'DP1';
+        type = 'CD';
         numbodies = 2;        
     end
     properties
         name = '';
         id = [];
+        c = [];
         body1 = [];
-        aP1 = [];
+        sP1 = [];
         body2 = [];
-        aP2 = [];
+        sP2 = [];
         func = @(t)0;
     end
     properties(Access = private)
@@ -22,7 +23,7 @@ classdef Constraint_DP1
     
     methods(Access = public)
         %Constructor
-        function obj = Constraint_DP1(json_constraint)
+        function obj = Constraint_CD(json_constraint)
             
             %ensure aP1 & aP2 are columns, not rows & have a magnitude of 1
             if(size(json_constraint.aP1,1)==1)
@@ -38,10 +39,11 @@ classdef Constraint_DP1
             
             obj.name = json_constraint.name;
             obj.id = json_constraint.id;
+            obj.c = json_constraint.c;
             obj.body1 = json_constraint.body1;
-            obj.aP1 = json_constraint.aP1;
+            obj.sP1 = json_constraint.sP1;
             obj.body2 = json_constraint.body2;
-            obj.aP2 = json_constraint.aP2;
+            obj.sP2 = json_constraint.sP2;
 
             
             if(strcmpi(json_constraint.fun,'NONE'))
@@ -54,84 +56,83 @@ classdef Constraint_DP1
                 obj.funcdd = matlabFunction(diff(symfunc,2),'vars',t);
             end
         end
-        function Phi_DP1 = Phi(obj, t, q, ~)
+        function Phi_CD = Phi(obj, t, q, ~)
             %Phi_DP1 = ai_bar_T*Ai_T*Aj*aj_bar_T -f(t)
             
-            %ri = q(1:3);
+            ri = q(1:3);
             pi = q(4:7);
-            %rj = q(7+(1:3));
+            rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            Phi_DP1 = obj.aP1'*A(pi)'*A(pj)*obj.aP2;
+            Phi_CD = obj.c'*(rj+A(pj)*obj.sP2-ri-A(pi)*obj.sP1);
             
             if(obj.has_fun) %function for translational defines a translational-distance driver
-                Phi_DP1 = Phi_DP1-obj.func(t);
+                Phi_CD = Phi_CD-obj.func(t);
             end
         end
-        function Phi_qri_DP1 = Phi_qri(obj, ~, ~, ~)
-            %Phi_qri_DP1 = 0
+        function Phi_qri_CD = Phi_qri(obj, ~, ~, ~)
+            %Phi_qri_DP1 = -c_T
             
             %ri = q(1:2);
             %phi_i = q(3);
             %rj = q(4:5);
             %phi_j = q(6);
             
-            Phi_qri_DP1 = 0;
+            Phi_qri_CD = -obj.c';
         end
-        function Phi_qrj_DP1 = Phi_qrj(obj, ~, ~, ~)
-            %Phi_qrj_DP1 = 0
+        function Phi_qrj_CD = Phi_qrj(obj, ~, ~, ~)
+            %Phi_qrj_CD = c_T
             
             %ri = q(1:2);
             %phi_i = q(3);
             %rj = q(4:5);
             %phi_j = q(6);
             
-            Phi_qrj_DP1 = 0;
+            Phi_qrj_CD = obj.c';
         end        
-        function Phi_qpi_DP1 = Phi_qpi(obj, ~, q, ~)
-            %Phi_qpi_DP1 = aj_bar_T*Aj_T*B(pi,ai_bar)
+        function Phi_qpi_CD = Phi_qpi(obj, ~, q, ~)
+            %Phi_qpi_CD = -c_T*B(pi,si_bar_P)
 
             %ri = q(1:3);
             pi = q(4:7);
             %rj = q(7+(1:3));
-            pj = q(7+(4:7));
+            %pj = q(7+(4:7));
             
-            Phi_qpi_DP1 = obj.aP2'*A(pj)*B(pi,obj.aP1);
+            Phi_qpi_CD = -obj.c'*B(pi,obj.sP1);
         end        
-        function Phi_qpj_DP1 = Phi_qpj(obj, ~, q, ~)
-            %Phi_qpj_DP1 = ai_bar_T*Ai_T*B(pj,aj_bar)
+        function Phi_qpj_CD = Phi_qpj(obj, ~, q, ~)
+            %Phi_qpj_CD = c_T*B(pj,sj_bar_Q)
 
             %ri = q(1:3);
-            pi = q(4:7);
+            %pi = q(4:7);
             %rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            Phi_qpj_DP1 = obj.aP1'*A(pi)*B(pj,obj.aP2);
+            Phi_qpj_CD = obj.c'*B(pj,obj.sP2);
         end         
-        function Nu_DP1 = Nu(obj, t, ~, ~)
-            %Nu_DP1 = f_dot(t)
+        function Nu_CD = Nu(obj, t, ~, ~)
+            %Nu_CD = f_dot(t)
             
-            Nu_DP1 = obj.funcd(t);    
+            Nu_CD = obj.funcd(t);    
         end
-        function Gamma_DP1 = Gamma(obj, t, q, qd)
-            %Gamma_DP1 = -2*pj_dot_T*B(pj,a_j_bar)_T*B(pi,a_i_bar)*pi_dot
-            %   -aj_bar_T*Aj_T*B(pi_dot,ai_bar)*pi_dot
-            %   -ai_bar_T*Ai_T*B(pj_dot,aj_bar)*pj_dot + f_dd(t)
+        function Gamma_CD = Gamma(obj, t, ~, qd)
+            %Gamma_CD = c_T*B(pi_dot,si_bar_P)*pi_dot
+            %   - c_T*B(pj_dot,sj_bar_Q)*pj_dot
+            %   + f_dd(t)
             
             %ri = q(1:3);
-            pi = q(4:7);
+            %pi = q(4:7);
             %rj = q(7+(1:3));
-            pj = q(7+(4:7));
+            %pj = q(7+(4:7));
             
             %ri_d = qd(1:3);
             pi_d = qd(4:7);
             %rj_d = qd(7+(1:3));
             pj_d = qd(7+(4:7));
             
-            Gamma_DP1 = -2*pj_d'*B(pj,obj.aP2)'*B(pi,obj.aP1)*pi_d ...
-                        -obj.aP2'*A(pj)'*B(pi_d,obj.aP1)*pi_d ...
-                        -obj.aP1'*A(pi)'*B(pj_d,obj.aP2)*pj_d ...
-                        +obj.funcdd(t);
+            Gamma_CD = obj.c'*B(pi_d,obj.sP1)*pi_d ...
+                      -obj.c'*B(pj_d,obj.sP2)*pj_d ...
+                      +obj.funcdd(t);
             
         end        
     end
