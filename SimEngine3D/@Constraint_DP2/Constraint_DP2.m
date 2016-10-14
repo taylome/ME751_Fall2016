@@ -1,8 +1,8 @@
-classdef Constraint_DP1
-    %Implementation of the DP1 Constraint
+classdef Constraint_DP2
+    %Implementation of the DP2 Constraint
     %ME751 - Homework #5 - Oct 2016
     properties(Constant)
-        type = 'DP1';
+        type = 'DP2';
         numbodies = 2;        
     end
     properties
@@ -10,8 +10,9 @@ classdef Constraint_DP1
         id = [];
         body1 = [];
         aP1 = [];
+        sP1 = [];
         body2 = [];
-        aP2 = [];
+        sP2 = [];
         func = @(t)0;
     end
     properties(Access = private)
@@ -22,26 +23,29 @@ classdef Constraint_DP1
     
     methods(Access = public)
         %Constructor
-        function obj = Constraint_DP1(json_constraint)
+        function obj = Constraint_DP2(json_constraint)
             
-            %ensure aP1 & aP2 are columns, not rows & have a magnitude of 1
+            %ensure aP1, sP1 & sP2 are columns, not rows & have a magnitude of 1
             if(size(json_constraint.aP1,1)==1)
                 json_constraint.aP1 = json_constraint.aP1';
             end
-            if(size(json_constraint.aP2,1)==1)
+            if(size(json_constraint.sP1,1)==1)
+                json_constraint.sP1 = json_constraint.sP1';
+            end
+            if(size(json_constraint.as2,1)==1)
                 json_constraint.aP2 = json_constraint.aP2';
             end
             
             json_constraint.aP1 = json_constraint.aP1/norm(json_constraint.aP1);
-            json_constraint.aP2 = json_constraint.aP2/norm(json_constraint.aP2);
             
             
             obj.name = json_constraint.name;
             obj.id = json_constraint.id;
             obj.body1 = json_constraint.body1;
             obj.aP1 = json_constraint.aP1;
+            obj.sP1 = json_constraint.sP1;
             obj.body2 = json_constraint.body2;
-            obj.aP2 = json_constraint.aP2;
+            obj.sP2 = json_constraint.sP2;
 
             
             if(strcmpi(json_constraint.fun,'NONE'))
@@ -54,84 +58,84 @@ classdef Constraint_DP1
                 obj.funcdd = matlabFunction(diff(symfunc,2),'vars',t);
             end
         end
-        function Phi_DP1 = Phi(obj, t, q, ~)
-            %Phi_DP1 = ai_bar_T*Ai_T*Aj*aj_bar_T -f(t)
+        function Phi_DP2 = Phi(obj, t, q, ~)
+            %Phi_DP2 = ai_bar_T*Ai_T*dij -f(t)
             
-            %ri = q(1:3);
+            ri = q(1:3);
             pi = q(4:7);
-            %rj = q(7+(1:3));
+            rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            Phi_DP1 = obj.aP1'*A(pi)'*A(pj)*obj.aP2;
+            Phi_DP2 = obj.aP1'*A(pi)'*dij(ri,pi,obj.sP1,rj,pj,obj.sP2);
             
             if(obj.has_fun) %function to define a driver
-                Phi_DP1 = Phi_DP1-obj.func(t);
+                Phi_DP2 = Phi_DP2-obj.func(t);
             end
         end
-        function Phi_qri_DP1 = Phi_qri(obj, ~, ~, ~)
-            %Phi_qri_DP1 = 0
+        function Phi_qri_DP2 = Phi_qri(obj, ~, ~, ~)
+            %Phi_qri_DP2 = -ai_bar_T*Ai_T
             
             %ri = q(1:3);
-            %pi = q(4:7);
+            pi = q(4:7);
             %rj = q(7+(1:3));
             %pj = q(7+(4:7));
             
-            Phi_qri_DP1 = 0;
+            Phi_qri_DP2 = -obj.aP1'*A(pi)';
         end
-        function Phi_qrj_DP1 = Phi_qrj(obj, ~, ~, ~)
-            %Phi_qrj_DP1 = 0
+        function Phi_qrj_DP2 = Phi_qrj(obj, ~, ~, ~)
+            %Phi_qrj_DP2 = ai_bar_T*Ai_T
             
             %ri = q(1:3);
-            %pi = q(4:7);
+            pi = q(4:7);
             %rj = q(7+(1:3));
             %pj = q(7+(4:7));
             
-            Phi_qrj_DP1 = 0;
+            Phi_qrj_DP2 = obj.aP1'*A(pi)';
         end        
-        function Phi_qpi_DP1 = Phi_qpi(obj, ~, q, ~)
-            %Phi_qpi_DP1 = aj_bar_T*Aj_T*B(pi,ai_bar)
+        function Phi_qpi_DP2 = Phi_qpi(obj, ~, q, ~)
+            %Phi_qpi_DP2 = dij_T*B(pi,a_i_bar)-ai_bar_T*Ai_T*B(pi,s_bar_p)
 
             %ri = q(1:3);
             pi = q(4:7);
             %rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            Phi_qpi_DP1 = obj.aP2'*A(pj)*B(pi,obj.aP1);
+            Phi_qpi_DP2 = dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pi,obj.aP1)...
+                -obj.aP1'*A(pi)'*B(pi,obj.sP1);
         end        
-        function Phi_qpj_DP1 = Phi_qpj(obj, ~, q, ~)
-            %Phi_qpj_DP1 = ai_bar_T*Ai_T*B(pj,aj_bar)
+        function Phi_qpj_DP2 = Phi_qpj(obj, ~, q, ~)
+            %Phi_qpj_DP2 = ai_bar_T*Ai_T*B(pj,s_bar_q)
 
             %ri = q(1:3);
             pi = q(4:7);
             %rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            Phi_qpj_DP1 = obj.aP1'*A(pi)*B(pj,obj.aP2);
+            Phi_qpj_DP2 = obj.aP1'*A(pi)'*B(pj,obj.sP2);
         end         
-        function Nu_DP1 = Nu(obj, t, ~, ~)
-            %Nu_DP1 = f_dot(t)
+        function Nu_DP2 = Nu(obj, t, ~, ~)
+            %Nu_DP2 = f_dot(t)
             
-            Nu_DP1 = obj.funcd(t);    
+            Nu_DP2 = obj.funcd(t);    
         end
-        function Gamma_DP1 = Gamma(obj, t, q, qd)
-            %Gamma_DP1 = -2*pj_dot_T*B(pj,a_j_bar)_T*B(pi,a_i_bar)*pi_dot
-            %   -aj_bar_T*Aj_T*B(pi_dot,ai_bar)*pi_dot
-            %   -ai_bar_T*Ai_T*B(pj_dot,aj_bar)*pj_dot + f_dd(t)
+        function Gamma_DP2 = Gamma(obj, t, q, qd)
+            %Gamma_DP2 = a bunch of stuff + f_dd(t)
             
-            %ri = q(1:3);
+            ri = q(1:3);
             pi = q(4:7);
-            %rj = q(7+(1:3));
+            rj = q(7+(1:3));
             pj = q(7+(4:7));
             
-            %ri_d = qd(1:3);
+            ri_d = qd(1:3);
             pi_d = qd(4:7);
-            %rj_d = qd(7+(1:3));
+            rj_d = qd(7+(1:3));
             pj_d = qd(7+(4:7));
             
-            Gamma_DP1 = -2*pj_d'*B(pj,obj.aP2)'*B(pi,obj.aP1)*pi_d ...
-                        -obj.aP2'*A(pj)'*B(pi_d,obj.aP1)*pi_d ...
-                        -obj.aP1'*A(pi)'*B(pj_d,obj.aP2)*pj_d ...
-                        +obj.funcdd(t);
+            Gamma_DP2 = -2*pi_d'*B(pi,obj.aP1)'*(rj_d+b(pj,obj.sP2)*pj_dot-ri_d-b(pi,obj.sP1)*pi_dot)...
+                -dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pi_d,obj.aP1)...
+                -obj.aP1'*A(pi)'*B(pj_d,obj.sP2)*pj_d...
+                +obj.aP1'*A(pi)'*B(pi_d,obj.sP1)*pi_d...
+                +obj.funcdd(t);
             
         end        
     end
@@ -169,4 +173,7 @@ B_Matrix = [ 2*e0*s1 + 2*e2*s3 - 2*e3*s2, 2*e1*s1 + 2*e2*s2 + 2*e3*s3, 2*e0*s3 +
              2*e0*s2 - 2*e1*s3 + 2*e3*s1, 2*e2*s1 - 2*e1*s2 - 2*e0*s3, 2*e1*s1 + 2*e2*s2 + 2*e3*s3, 2*e0*s1 + 2*e2*s3 - 2*e3*s2;...
              2*e0*s3 + 2*e1*s2 - 2*e2*s1, 2*e0*s2 - 2*e1*s3 + 2*e3*s1, 2*e3*s2 - 2*e2*s3 - 2*e0*s1, 2*e1*s1 + 2*e2*s2 + 2*e3*s3];
 
+end
+function d = dij(ri,pi,s_bar_p,rj,pj,s_bar_q)
+    d = (rj + A(pj)*s_bar_q - ri -A(pi)*s_bar_p);
 end

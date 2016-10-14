@@ -26,15 +26,16 @@ classdef Constraint_CD
         function obj = Constraint_CD(json_constraint)
             
             %ensure aP1 & aP2 are columns, not rows & have a magnitude of 1
-            if(size(json_constraint.aP1,1)==1)
-                json_constraint.aP1 = json_constraint.aP1';
+            if(size(json_constraint.sP1,1)==1)
+                json_constraint.sP1 = json_constraint.sP1';
             end
-            if(size(json_constraint.aP2,1)==1)
-                json_constraint.aP2 = json_constraint.aP2';
+            if(size(json_constraint.sP2,1)==1)
+                json_constraint.sP2 = json_constraint.sP2';
             end
-            
-            json_constraint.aP1 = json_constraint.aP1/norm(json_constraint.aP1);
-            json_constraint.aP2 = json_constraint.aP2/norm(json_constraint.aP2);
+            if(size(json_constraint.c,1)==1)
+                json_constraint.c = json_constraint.c';
+            end            
+            json_constraint.c = json_constraint.c/norm(json_constraint.c);
             
             
             obj.name = json_constraint.name;
@@ -57,7 +58,7 @@ classdef Constraint_CD
             end
         end
         function Phi_CD = Phi(obj, t, q, ~)
-            %Phi_DP1 = ai_bar_T*Ai_T*Aj*aj_bar_T -f(t)
+            %Phi_CD = c_T*dij -f(t)
             
             ri = q(1:3);
             pi = q(4:7);
@@ -66,27 +67,27 @@ classdef Constraint_CD
             
             Phi_CD = obj.c'*(rj+A(pj)*obj.sP2-ri-A(pi)*obj.sP1);
             
-            if(obj.has_fun) %function for translational defines a translational-distance driver
+            if(obj.has_fun) %function to define a driver
                 Phi_CD = Phi_CD-obj.func(t);
             end
         end
         function Phi_qri_CD = Phi_qri(obj, ~, ~, ~)
-            %Phi_qri_DP1 = -c_T
+            %Phi_qri_CD = -c_T
             
-            %ri = q(1:2);
-            %phi_i = q(3);
-            %rj = q(4:5);
-            %phi_j = q(6);
+            %ri = q(1:3);
+            %pi = q(4:7);
+            %rj = q(7+(1:3));
+            %pj = q(7+(4:7));
             
             Phi_qri_CD = -obj.c';
         end
         function Phi_qrj_CD = Phi_qrj(obj, ~, ~, ~)
             %Phi_qrj_CD = c_T
             
-            %ri = q(1:2);
-            %phi_i = q(3);
-            %rj = q(4:5);
-            %phi_j = q(6);
+            %ri = q(1:3);
+            %pi = q(4:7);
+            %rj = q(7+(1:3));
+            %pj = q(7+(4:7));
             
             Phi_qrj_CD = obj.c';
         end        
