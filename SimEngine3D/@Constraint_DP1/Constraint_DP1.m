@@ -76,7 +76,7 @@ classdef Constraint_DP1
             %rj = q(7+(1:3));
             %pj = q(7+(4:7));
             
-            Phi_qri_DP1 = 0;
+            Phi_qri_DP1 = zeros(1,3);
         end
         function Phi_qrj_DP1 = Phi_qrj(obj, ~, ~, ~)
             %Phi_qrj_DP1 = 0
@@ -86,7 +86,7 @@ classdef Constraint_DP1
             %rj = q(7+(1:3));
             %pj = q(7+(4:7));
             
-            Phi_qrj_DP1 = 0;
+            Phi_qrj_DP1 = zeros(1,3);
         end        
         function Phi_qpi_DP1 = Phi_qpi(obj, ~, q, ~)
             %Phi_qpi_DP1 = aj_bar_T*Aj_T*B(pi,ai_bar)

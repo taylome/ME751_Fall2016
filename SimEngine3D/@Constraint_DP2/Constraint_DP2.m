@@ -32,8 +32,8 @@ classdef Constraint_DP2
             if(size(json_constraint.sP1,1)==1)
                 json_constraint.sP1 = json_constraint.sP1';
             end
-            if(size(json_constraint.as2,1)==1)
-                json_constraint.aP2 = json_constraint.aP2';
+            if(size(json_constraint.sP2,1)==1)
+                json_constraint.sP2 = json_constraint.sP2';
             end
             
             json_constraint.aP1 = json_constraint.aP1/norm(json_constraint.aP1);
@@ -72,7 +72,7 @@ classdef Constraint_DP2
                 Phi_DP2 = Phi_DP2-obj.func(t);
             end
         end
-        function Phi_qri_DP2 = Phi_qri(obj, ~, ~, ~)
+        function Phi_qri_DP2 = Phi_qri(obj, ~, q, ~)
             %Phi_qri_DP2 = -ai_bar_T*Ai_T
             
             %ri = q(1:3);
@@ -82,7 +82,7 @@ classdef Constraint_DP2
             
             Phi_qri_DP2 = -obj.aP1'*A(pi)';
         end
-        function Phi_qrj_DP2 = Phi_qrj(obj, ~, ~, ~)
+        function Phi_qrj_DP2 = Phi_qrj(obj, ~, q, ~)
             %Phi_qrj_DP2 = ai_bar_T*Ai_T
             
             %ri = q(1:3);
@@ -95,9 +95,9 @@ classdef Constraint_DP2
         function Phi_qpi_DP2 = Phi_qpi(obj, ~, q, ~)
             %Phi_qpi_DP2 = dij_T*B(pi,a_i_bar)-ai_bar_T*Ai_T*B(pi,s_bar_p)
 
-            %ri = q(1:3);
+            ri = q(1:3);
             pi = q(4:7);
-            %rj = q(7+(1:3));
+            rj = q(7+(1:3));
             pj = q(7+(4:7));
             
             Phi_qpi_DP2 = dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pi,obj.aP1)...
@@ -131,7 +131,7 @@ classdef Constraint_DP2
             rj_d = qd(7+(1:3));
             pj_d = qd(7+(4:7));
             
-            Gamma_DP2 = -2*pi_d'*B(pi,obj.aP1)'*(rj_d+b(pj,obj.sP2)*pj_dot-ri_d-b(pi,obj.sP1)*pi_dot)...
+            Gamma_DP2 = -2*pi_d'*B(pi,obj.aP1)'*(rj_d+B(pj,obj.sP2)*pj_d-ri_d-B(pi,obj.sP1)*pi_d)...
                 -dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pi_d,obj.aP1)...
                 -obj.aP1'*A(pi)'*B(pj_d,obj.sP2)*pj_d...
                 +obj.aP1'*A(pi)'*B(pi_d,obj.sP1)*pi_d...

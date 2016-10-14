@@ -66,7 +66,7 @@ classdef Constraint_D
                 Phi_D = Phi_D-obj.func(t);
             end
         end
-        function Phi_qri_D = Phi_qri(obj, ~, ~, ~)
+        function Phi_qri_D = Phi_qri(obj, ~, q, ~)
             %Phi_qri_D = -2*dij_T
             
             ri = q(1:3);
@@ -76,7 +76,7 @@ classdef Constraint_D
             
             Phi_qri_D = -2*dij(ri,pi,obj.sP1,rj,pj,obj.sP2)';
         end
-        function Phi_qrj_D = Phi_qrj(obj, ~, ~, ~)
+        function Phi_qrj_D = Phi_qrj(obj, ~, q, ~)
             %Phi_qrj_D = 2*dij_T
             
             ri = q(1:3);
@@ -111,7 +111,7 @@ classdef Constraint_D
             
             Nu_D = obj.funcd(t);    
         end
-        function Gamma_D = Gamma(obj, t, ~, qd)
+        function Gamma_D = Gamma(obj, t, q, qd)
             %Gamma_CD = -2dij_d_T*dij-2dij_T*B(pj_dot,sj_bar_Q)*pj_dot
             %   + 2dij_T*B(pi_dot,si_bar_P)*pi_dot
             %   + f_dd(t)
@@ -126,7 +126,7 @@ classdef Constraint_D
             rj_d = qd(7+(1:3));
             pj_d = qd(7+(4:7));
             
-            Gamma_D = -2*(rj_d+b(pj,obj.sP2)*pj_dot-ri_d-b(pi,obj.sP1)*pi_dot)'*dij(ri,pi,obj.sP1,rj,pj,obj.sP2) ...
+            Gamma_D = -2*(rj_d+B(pj,obj.sP2)*pj_d-ri_d-B(pi,obj.sP1)*pi_d)'*dij(ri,pi,obj.sP1,rj,pj,obj.sP2) ...
                       -2*dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pj_d,obj.sP2)*pj_d ...
                       +2*dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pi_d,obj.sP1)*pi_d ...
                       +obj.funcdd(t);
