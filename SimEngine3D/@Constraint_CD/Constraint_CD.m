@@ -18,7 +18,7 @@ classdef Constraint_CD
     properties(Access = private)
         funcd = @(t)0;
         funcdd = @(t)0;
-        has_fun = false;
+        has_fun = true;
     end
     
     methods(Access = public)
