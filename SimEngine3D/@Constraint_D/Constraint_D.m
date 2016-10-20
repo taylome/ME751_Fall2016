@@ -105,7 +105,13 @@ classdef Constraint_D
             pj = q(7+(4:7));
             
             Phi_qpj_D = 2*dij(ri,pi,obj.sP1,rj,pj,obj.sP2)'*B(pj,obj.sP2);
-        end         
+        end
+        function Phi_qi_D = Phi_qi(obj, t, q, qd)
+            Phi_qi_D = [obj.Phi_qri(t, q, qd),obj.Phi_qpi(t, q, qd)];
+        end
+        function Phi_qj_D = Phi_qj(obj, t, q, qd)
+            Phi_qj_D = [obj.Phi_qrj(t, q, qd),obj.Phi_qpj(t, q, qd)];
+        end          
         function Nu_D = Nu(obj, t, ~, ~)
             %Nu_D = f_dot(t)
             

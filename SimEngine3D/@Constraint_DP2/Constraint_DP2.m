@@ -112,7 +112,13 @@ classdef Constraint_DP2
             pj = q(7+(4:7));
             
             Phi_qpj_DP2 = obj.aP1'*A(pi)'*B(pj,obj.sP2);
-        end         
+        end       
+        function Phi_qi_DP2 = Phi_qi(obj, t, q, qd)
+            Phi_qi_DP2 = [obj.Phi_qri(t, q, qd),obj.Phi_qpi(t, q, qd)];
+        end
+        function Phi_qj_DP2 = Phi_qj(obj, t, q, qd)
+            Phi_qj_DP2 = [obj.Phi_qrj(t, q, qd),obj.Phi_qpj(t, q, qd)];
+        end          
         function Nu_DP2 = Nu(obj, t, ~, ~)
             %Nu_DP2 = f_dot(t)
             

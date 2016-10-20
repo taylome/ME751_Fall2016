@@ -110,7 +110,13 @@ classdef Constraint_CD
             pj = q(7+(4:7));
             
             Phi_qpj_CD = obj.c'*B(pj,obj.sP2);
-        end         
+        end
+        function Phi_qi_CD = Phi_qi(obj, t, q, qd)
+            Phi_qi_CD = [obj.Phi_qri(t, q, qd),obj.Phi_qpi(t, q, qd)];
+        end
+        function Phi_qj_CD = Phi_qj(obj, t, q, qd)
+            Phi_qj_CD = [obj.Phi_qrj(t, q, qd),obj.Phi_qpj(t, q, qd)];
+        end        
         function Nu_CD = Nu(obj, t, ~, ~)
             %Nu_CD = f_dot(t)
             

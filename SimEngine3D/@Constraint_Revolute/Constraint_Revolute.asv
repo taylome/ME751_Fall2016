@@ -100,7 +100,7 @@ classdef Constraint_Revolute
                 %rotational DOF driver
                 %The primary constraint is PD1 marker 1 x and marker 2 x.
                 %The secondary constraint when the dot product of two x axes is
-                %close to 1 or -1 is a PD1 marker 1 x and marker 2 y.
+                %close to 1 is PD1 marker 1 x and marker 2 y.
                 sub_constraint.aP1 = obj.marker1.x_axis;
                 sub_constraint.aP2 = obj.marker2.x_axis;
                 sub_constraint.fun = ['cos(',json_constraint.fun,')'];
@@ -109,6 +109,7 @@ classdef Constraint_Revolute
                 sub_constraint.aP2 = obj.marker2.y_axis;
                 sub_constraint.fun = ['cos(',json_constraint.fun,'+pi()/2)'];
                 obj.Constraint_DP1_driver_alt = Constraint_DP1(sub_constraint);
+                %obj.Constraint_DP1_driver = Constraint_DP1(sub_constraint);
             end
         end
         function Phi_Rev = Phi(obj, t, q, qd)
@@ -172,9 +173,8 @@ classdef Constraint_Revolute
                     Phi_qrj_Rev = [Phi_qrj_Rev;...
                                    obj.Constraint_DP1_driver.Phi_qrj(t, q, qd)];
                 else
-                    Phi_qrj_Rev = [Phi_qrj_Rev;...
-                                   obj.Constraint_DP1_driver_alt.Phi_qrj(t, q, qd)];
                 end
+                
             end
         end        
         function Phi_qpi_Rev = Phi_qpi(obj, t, q, qd)
@@ -185,18 +185,8 @@ classdef Constraint_Revolute
                            obj.Constraint_DP1_2.Phi_qpi(t, q, qd)];
             
             if(obj.has_fun) %function to define a driver along the otherwise free rotational DOF
-                %ri = q(1:3);
-                pi = q(4:7);
-                %rj = q(7+(1:3));
-                pj = q(7+(4:7));
-           
-                if(abs(obj.Constraint_DP1_driver.aP1'*A(pi)'*A(pj)*obj.Constraint_DP1_driver.aP2)<.9)                 
-                    Phi_qpi_Rev = [Phi_qpi_Rev;...
-                                   obj.Constraint_DP1_driver.Phi_qpi(t, q, qd)];
-                else
-                    Phi_qpi_Rev = [Phi_qpi_Rev;...
-                                   obj.Constraint_DP1_driver_alt.Phi_qpi(t, q, qd)];                    
-                end
+                Phi_qpi_Rev = [Phi_qpi_Rev;...
+                               obj.Constraint_DP1_driver.Phi_qpi(t, q, qd)];
                            
             end
         end        
@@ -208,18 +198,8 @@ classdef Constraint_Revolute
                            obj.Constraint_DP1_2.Phi_qpj(t, q, qd)];
             
             if(obj.has_fun) %function to define a driver along the otherwise free rotational DOF
-                %ri = q(1:3);
-                pi = q(4:7);
-                %rj = q(7+(1:3));
-                pj = q(7+(4:7));
-           
-                if(abs(obj.Constraint_DP1_driver.aP1'*A(pi)'*A(pj)*obj.Constraint_DP1_driver.aP2)<.9)                 
-                    Phi_qpj_Rev = [Phi_qpj_Rev;...
-                                   obj.Constraint_DP1_driver.Phi_qpj(t, q, qd)];
-                else
-                    Phi_qpj_Rev = [Phi_qpj_Rev;...
-                                   obj.Constraint_DP1_driver_alt.Phi_qpj(t, q, qd)];
-                end
+                Phi_qpj_Rev = [Phi_qpj_Rev;...
+                               obj.Constraint_DP1_driver.Phi_qpj(t, q, qd)];
                            
             end
         end
@@ -237,18 +217,8 @@ classdef Constraint_Revolute
                            obj.Constraint_DP1_2.Nu(t, q, qd)];
             
             if(obj.has_fun) %function to define a driver along the otherwise free rotational DOF
-                %ri = q(1:3);
-                pi = q(4:7);
-                %rj = q(7+(1:3));
-                pj = q(7+(4:7));
-           
-                if(abs(obj.Constraint_DP1_driver.aP1'*A(pi)'*A(pj)*obj.Constraint_DP1_driver.aP2)<.9)                 
-                    Nu_Rev = [Nu_Rev;...
-                              obj.Constraint_DP1_driver_alt.Nu(t, q, qd)];
-                else
-                    Nu_Rev = [Nu_Rev;...
-                              obj.Constraint_DP1_driver_alt.Nu(t, q, qd)];
-                end
+                Nu_Rev = [Nu_Rev;...
+                          obj.Constraint_DP1_driver.Nu(t, q, qd)];
                            
             end   
         end
@@ -260,18 +230,8 @@ classdef Constraint_Revolute
                            obj.Constraint_DP1_2.Gamma(t, q, qd)];
             
             if(obj.has_fun) %function to define a driver along the otherwise free rotational DOF
-                %ri = q(1:3);
-                pi = q(4:7);
-                %rj = q(7+(1:3));
-                pj = q(7+(4:7));
-           
-                if(abs(obj.Constraint_DP1_driver.aP1'*A(pi)'*A(pj)*obj.Constraint_DP1_driver.aP2)<.9)                 
-                    Gamma_Rev = [Gamma_Rev;...
-                              obj.Constraint_DP1_driver_alt.Gamma(t, q, qd)];
-                else
-                    Gamma_Rev = [Gamma_Rev;...
-                              obj.Constraint_DP1_driver_alt.Gamma(t, q, qd)];
-                end
+                Gamma_Rev = [Gamma_Rev;...
+                          obj.Constraint_DP1_driver.Gamma(t, q, qd)];
                            
             end
         end

@@ -47,6 +47,7 @@ qb.e1 = e(1);
 qb.e2 = e(2);
 qb.e3 = e(3);
 
+q = zeros(4,1);
 q(1) = qa.e0 * qb.e0 - qa.e1 * qb.e1 - qa.e2 * qb.e2 - qa.e3 * qb.e3;
 q(2) = qa.e0 * qb.e1 + qa.e1 * qb.e0 - qa.e3 * qb.e2 + qa.e2 * qb.e3;
 q(3) = qa.e0 * qb.e2 + qa.e2 * qb.e0 + qa.e3 * qb.e1 - qa.e1 * qb.e3;
