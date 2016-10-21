@@ -104,10 +104,11 @@ classdef Constraint_Revolute
                 sub_constraint.aP1 = obj.marker1.x_axis;
                 sub_constraint.aP2 = obj.marker2.x_axis;
                 sub_constraint.fun = ['cos(',json_constraint.fun,')'];
-                obj.Constraint_DP1_driver = Constraint_DP1(sub_constraint);
+                %obj.Constraint_DP1_driver = Constraint_DP1(sub_constraint);
                 
                 sub_constraint.aP2 = obj.marker2.y_axis;
                 sub_constraint.fun = ['cos(',json_constraint.fun,'+pi()/2)'];
+                obj.Constraint_DP1_driver = Constraint_DP1(sub_constraint);
                 obj.Constraint_DP1_driver_alt = Constraint_DP1(sub_constraint);
             end
         end
