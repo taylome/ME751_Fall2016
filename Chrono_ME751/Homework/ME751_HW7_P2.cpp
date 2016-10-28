@@ -149,6 +149,7 @@ int main(int argc, char* argv[])
   link1->AddAsset(box_link1);
 
   link1->SetPos_dt(ChVector<>(0.5, 0, 0));
+  link1->SetWvel_par(ChVector<>(0, 0, -1));
 
   // Create the second link body in an initial configuration
   ChCoordsys<>Link2CSYS(ChVector<>(0.5, 1, 0), Q_from_AngZ(CH_C_PI_2));
@@ -192,6 +193,7 @@ int main(int argc, char* argv[])
   link3->AddAsset(box_link3);
 
   link3->SetPos_dt(ChVector<>(0.5, 0, 0));
+  link3->SetWvel_par(ChVector<>(0, 0, -1));
 
   // Create revolute or spherical joints between the links and/or ground at "loc" in the global
   // reference frame. The revolute joint's axis of rotation will be the Z axis
