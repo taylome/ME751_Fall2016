@@ -17,6 +17,7 @@ MESSAGE(STATUS "Adding Homework Problems...")
 SET(HW_PROGRAMS
     ME751_HW6_P4
 	ME751_HW7_P2
+	ME751_HW8_P3
 )
 
 #--------------------------------------------------------------
