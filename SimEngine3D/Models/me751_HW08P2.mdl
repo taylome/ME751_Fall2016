@@ -57,13 +57,13 @@
 		{
             "name": "Rev02",
             "id": 2,
-            "type": "Revolute",
+            "type": "Spherical",
             "body1": 1,
 			"marker1": [
 				{
 					"P": [2,0,0],
 					"Q": [2,0,1],
-					"R": [3,0,0]
+					"R": [4,0,0]
 				}
 			],
             "body2": 2,
@@ -82,8 +82,8 @@
 			"Type": "Dynamics",
 			"Solver": "BDF1",
 			"tend": 10,
-			"stepSize": 0.01,
-			"outputSteps": 1000
+			"stepSize": 0.005,
+			"outputSteps": 2001
 		}
 	]
 }

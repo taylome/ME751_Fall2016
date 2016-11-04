@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
   // Set the simulation and output step sizes
   double simTimeStep = 5e-6;
-  double outTimeStep = 5e-5;
+  double outTimeStep = 1e-4;
 
 
   // Settings
@@ -487,7 +487,7 @@ int main(int argc, char* argv[])
           // put in a moving object.
           auto mcamera = std::make_shared<ChCamera>();
           mcamera->SetAngle(50);
-          mcamera->SetPosition(ChVector<>(0, -0.05, -0.2));
+          mcamera->SetPosition(ChVector<>(0, 0.05, 0.2));
           mcamera->SetAimPoint(ChVector<>(0, 0, 0));
           ground->AddAsset(mcamera);
 
