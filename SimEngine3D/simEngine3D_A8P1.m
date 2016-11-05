@@ -224,8 +224,15 @@ legend('e0','e1','e2','e3');
 set(gca(),'FontSize',16)
 
 figure();
+subplot(2,1,1)
 plot(Model_Dyn.time,Model_Dyn.NR);
 xlabel('Time (s)');
 ylabel('Number of NR Iterations');
 title(['ME751 - Number of NR Iterations - Dynamics - Time Step: ',num2str(Model_Dyn.simulation.stepSize),'s']);
+set(gca(),'FontSize',16)
+subplot(2,1,2)
+plot(Model_Dyn.time,Model_Dyn.CondPsi);
+xlabel('Time (s)');
+ylabel('Number of NR Iterations');
+title(['ME751 - Final Condition Number of Psi - Dynamics - Time Step: ',num2str(Model_Dyn.simulation.stepSize),'s']);
 set(gca(),'FontSize',16)

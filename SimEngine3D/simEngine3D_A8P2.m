@@ -36,7 +36,7 @@
 %      q]
  
 
-% %Pendulum 2 Initial Position & Mass Props
+% % %Pendulum 2 Initial Position & Mass Props
 % L = 2/2
 % m = 78/2
 % 1/12*m*(0.1^2+0.1^2)
@@ -62,8 +62,8 @@
 % 
 % r = [0;2;-1];
 % q = [r;...
-%      q]
- 
+%      qa.e0;qa.e1;qa.e2;qa.e3]
+% return 
  
 clc
 close all
@@ -166,26 +166,31 @@ legend('Pendulum 1','Pendulum 2');
 set(gca(),'FontSize',16)
 axis image
 
-
 Phi2_norm = zeros(size(Model.Phi,2),1);
 for i = 1:length(Phi2_norm)
-    Phi2_norm(i) = norm(Model.Phi(6:10,i));
+    Phi2_norm(i) = norm(Model.Phi(6:8,i));
+    %Phi2_norm(i) = norm(Model.Phi(4:6,i));
 end
 
 
 figure();
-subplot(2,1,1);
+subplot(3,1,1);
 plot(Model.time,Phi2_norm,'linewidth',3);
 grid on
 xlabel('Time (s)');
 ylabel('Norm2 of Revolute 2 Constraints');
 title(['ME751 - Norm2 of the Second Revolute Position Constraint Equations - Dynamics - Time Step: ',num2str(Model.simulation.stepSize),'s']);
 set(gca(),'FontSize',16)
-subplot(2,1,2);
+subplot(3,1,2);
 plot(Model.time,Model.NR,'linewidth',3);
 grid on
 xlabel('Time (s)');
 ylabel('Iteration Count');
 title(['ME751 - NR Iteration Count - Dynamics - Time Step: ',num2str(Model.simulation.stepSize),'s']);
 set(gca(),'FontSize',16)
-
+subplot(3,1,3);
+plot(Model_Dyn.time,Model_Dyn.CondPsi);
+xlabel('Time (s)');
+ylabel('Number of NR Iterations');
+title(['ME751 - Final Condition Number of Psi - Dynamics - Time Step: ',num2str(Model_Dyn.simulation.stepSize),'s']);
+set(gca(),'FontSize',16)

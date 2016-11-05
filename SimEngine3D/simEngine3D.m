@@ -19,7 +19,8 @@ end
 % Settings
 %--------------------------------------------------------------------------
 Settings.NewtonRaphsonMaxIterations = 50;
-Settings.NewtonRaphsonTol = 1E-8;
+%Settings.NewtonRaphsonTol = 1E-8;
+Settings.NewtonRaphsonTol = 1E-4;
 Settings.model_name = model_name;
 %--------------------------------------------------------------------------
  
@@ -95,61 +96,8 @@ for tindex = 1:NumTimeSteps
 %Step 2: Postion Analysis - Newton-Raphson
 %--------------------------------------------------------------------------    
     for NR = 1:Settings.NewtonRaphsonMaxIterations 
-    % A) Generate Phi & Phi_q [Jacobian]
-        Phi = zeros(size(q));
-        Phi_q = zeros(size(q,1));
-        index = 1;
-
-        for i = 1:length(Model.constraints)
-            if(Model.constraints{i}.numbodies == 1)
-                StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-                EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-                qi = q(StartIndex_i:EndIndex_i);
-
-                Phi_c = Model.constraints{i}.Phi(t, qi, []);
-                
-                Phi(index:index+(length(Phi_c)-1)) = Phi_c;
-                Phi_q(index:index+(length(Phi_c)-1),StartIndex_i:EndIndex_i) = Model.constraints{i}.Phi_qi(t, qi, []);
-
-                index = index + length(Phi_c);
-            elseif(Model.constraints{i}.body1 == 0) %Connected to ground
-                StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-                EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-                qi = [[0;0;0;1;0;0;0];q(StartIndex_j:EndIndex_j)];
-                
-                Phi_c = Model.constraints{i}.Phi(t, qi, []);
-
-                Phi(index:index+(length(Phi_c)-1)) = Phi_c;
-                Phi_q(index:index+(length(Phi_c)-1),StartIndex_j:EndIndex_j) = Model.constraints{i}.Phi_qj(t, qi, []);
-                
-                index = index + length(Phi_c);
-            elseif(Model.constraints{i}.body2 == 0) %Connected to ground
-                StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-                EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-                qi = [q(StartIndex_i:EndIndex_i);[0;0;0;1;0;0;0]];
-                
-                Phi_c = Model.constraints{i}.Phi(t, qi, []);
-                
-                Phi(index:index+(length(Phi_c)-1)) = Phi_c;
-                Phi_q(index:index+(length(Phi_c)-1),StartIndex_i:EndIndex_i) = Model.constraints{i}.Phi_qi(t, qi, []);
-                
-                index = index + length(Phi_c);                
-            else
-                StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-                EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-                StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-                EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-                qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
-                
-                Phi_c = Model.constraints{i}.Phi(t, qi, []);
-                
-                Phi(index:index+(length(Phi_c)-1)) = Phi_c;
-                Phi_q(index:index+(length(Phi_c)-1),StartIndex_i:EndIndex_i) = Model.constraints{i}.Phi_qi(t, qi, []);
-                Phi_q(index:index+(length(Phi_c)-1),StartIndex_j:EndIndex_j) = Model.constraints{i}.Phi_qj(t, qi, []);
-                
-                index = index + length(Phi_c);
-            end
-        end
+        % A) Generate Phi & Phi_q [Jacobian]
+        [Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q);
         
         % B) Calculate Correction
         correction = Phi_q\Phi;
@@ -168,71 +116,13 @@ for tindex = 1:NumTimeSteps
 %--------------------------------------------------------------------------
 %Step 3: Velocity Analysis - Solve Phi_q*qdot = Nu
 %--------------------------------------------------------------------------
-    index = 1;
-    Nu = zeros(size(q));
-    for i = 1:length(Model.constraints)
-        if(Model.constraints{i}.numbodies == 1)
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            qi = q(StartIndex_i:EndIndex_i);
-        elseif(Model.constraints{i}.body1 == 0) %Connected to ground
-            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-            qi = [[0;0;0;1;0;0;0];q(StartIndex_j:EndIndex_j)];
-        elseif(Model.constraints{i}.body2 == 0) %Connected to ground
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            qi = [q(StartIndex_i:EndIndex_i);[0;0;0;1;0;0;0]];        
-        else
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-            qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
-        end
-
-        Nu_c = Model.constraints{i}.Nu(t, qi, []);
-        Nu(index:index+(length(Nu_c)-1)) = Nu_c;
-
-        index = index + length(Nu_c);
-    end
+    Nu = calc_Nu(Model,t,q);
     qd = Phi_q\Nu;
 
 %--------------------------------------------------------------------------
 %Step 4: Acceleration Analysis - Solve Phi_q*qdot = Gamma
 %--------------------------------------------------------------------------
-    index = 1;
-    Gamma = zeros(size(q));
-    for i = 1:length(Model.constraints)
-        if(Model.constraints{i}.numbodies == 1)
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            qi = q(StartIndex_i:EndIndex_i);
-            qdi = qd(StartIndex_i:EndIndex_i);
-        elseif(Model.constraints{i}.body1 == 0) %Connected to ground
-            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-            qi = [[0;0;0;1;0;0;0];q(StartIndex_j:EndIndex_j)];
-            qdi = [zeros(7,1);qd(StartIndex_j:EndIndex_j)];
-        elseif(Model.constraints{i}.body2 == 0) %Connected to ground
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            qi = [q(StartIndex_i:EndIndex_i);[0;0;0;1;0;0;0]];             
-            qdi = [qd(StartIndex_i:EndIndex_i);zeros(7,1)];
-        else
-            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-            qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
-            qdi = [qd(StartIndex_i:EndIndex_i);qd(StartIndex_j:EndIndex_j)];
-        end
-
-        Gamma_c = Model.constraints{i}.Gamma(t, qi, qdi);
-        Gamma(index:index+(length(Gamma_c)-1)) = Gamma_c;
-
-        index = index + length(Gamma_c);
-    end
+    Gamma = calc_Gamma(Model,t,q,qd);    
     qdd = Phi_q\Gamma;
 
 %--------------------------------------------------------------------------
@@ -269,116 +159,17 @@ for tindex = 1:NumTimeSteps
         end
         
         % Solve for the Lagrange multipliers
-        lambdas = Phi_q'\RHS;
+        lambda = Phi_q'\RHS;
         
-        Model.lambda(:,tindex) = lambdas;
+        Model.lambda(:,tindex) = lambda;
         
         % Solve for the reaction forces and torques for each constraint
-        index = 1;
-        for i = 1:length(Model.constraints)
-            AccumForceTrq_Bodyi = zeros(6,1);
-            AccumForceTrq_Bodyj = zeros(6,1);
-            
-            NumEquations = length(Model.constraints{i}.Gamma(0, zeros(14,1), zeros(14,1)));
-            
-            if(Model.constraints{i}.numbodies == 1)
-                %Need to add markers to all of the GCONs and P constraints
-%                 StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-%                 EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-%                 qi = q(StartIndex_i:EndIndex_i);
-%                 Phi_qi = Phi_q(index:(index-1+NumEquations),StartIndex_i:EndIndex_i);
-%                 
-%                 for c = 1:NumEquations
-%                     lambda = lambdas(index + c-1);
-%                     Force = -Phi_qi(c,1:3)'*lambda; %Global Frame
-%                     Torque = -1/2*G(qi(4:7))*Phi_qi(c,4:7)'*lambda-Tilde(Model.constraints{i}.marker1.origin)*A(qi(4:7))'*Force;
-%                     Torque = A(qi(4:7))*Torque; %Local -> Global Frame
-%                 end
-                
-            elseif(Model.constraints{i}.body1 == 0) %Connected to ground
-                StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-                EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-                qj = q(StartIndex_j:EndIndex_j);
-                Phi_qj = Phi_q(index:(index-1+NumEquations),StartIndex_j:EndIndex_j);
-                
-                for c = 1:NumEquations
-                    lambda = lambdas(index + c-1);
-                    Force = -Phi_qj(c,1:3)'*lambda; %Global Frame
-                    Torque = -1/2*G(qj(4:7))*Phi_qj(c,4:7)'*lambda-Tilde(Model.constraints{i}.marker2.origin)*A(qj(4:7))'*Force;
-                    Torque = A(qj(4:7))*Torque; %Local -> Global Frame
-                    
-                    AccumForceTrq_Bodyj = AccumForceTrq_Bodyj + [Force;Torque];
-                end
-                AccumForceTrq_Bodyi = -AccumForceTrq_Bodyj;                
-                
-            elseif(Model.constraints{i}.body2 == 0) %Connected to ground
-                StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-                EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-                qi = q(StartIndex_i:EndIndex_i);
-                Phi_qi = Phi_q(index:(index-1+NumEquations),StartIndex_i:EndIndex_i);
-                
-                for c = 1:NumEquations
-                    lambda = lambdas(index + c-1);
-                    Force = -Phi_qi(c,1:3)'*lambda; %Global Frame
-                    Torque = -1/2*G(qi(4:7))*Phi_qi(c,4:7)'*lambda-Tilde(Model.constraints{i}.marker1.origin)*A(qi(4:7))'*Force;
-                    Torque = A(qi(4:7))*Torque; %Local -> Global Frame
-                    
-                    AccumForceTrq_Bodyi = AccumForceTrq_Bodyi + [Force;Torque];
-                end
-                AccumForceTrq_Bodyj = -AccumForceTrq_Bodyi;
-                
-            else
-                StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
-                EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
-                StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
-                EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
-                qi = q(StartIndex_i:EndIndex_i);
-                Phi_qi = Phi_q(index:(index-1+NumEquations),StartIndex_i:EndIndex_i);
-                qj = q(StartIndex_j:EndIndex_j);
-                Phi_qj = Phi_q(index:(index-1+NumEquations),StartIndex_j:EndIndex_j);
-                
-                for c = 1:NumEquations
-                    lambda = lambdas(index + c-1);
-                    Force = -Phi_qi(c,1:3)'*lambda; %Global Frame
-                    Torque = -1/2*G(qi(4:7))*Phi_qi(c,4:7)'*lambda-Tilde(Model.constraints{i}.marker1.origin)*A(qi(4:7))'*Force;
-                    Torque = A(qi(4:7))*Torque; %Local -> Global Frame
-                    
-                    AccumForceTrq_Bodyi = AccumForceTrq_Bodyi + [Force;Torque];
-                    
-                    Force = -Phi_qj(c,1:3)'*lambda; %Global Frame
-                    Torque = -1/2*G(qj(4:7))*Phi_qj(c,4:7)'*lambda-Tilde(Model.constraints{i}.marker2.origin)*A(qj(4:7))'*Force;
-                    Torque = A(qj(4:7))*Torque; %Local -> Global Frame
-                    
-                    AccumForceTrq_Bodyj = AccumForceTrq_Bodyj + [Force;Torque];                    
-                end                
-
-            end            
-
-            Model.ConstraintReactions(i).Body1(:,tindex) = AccumForceTrq_Bodyi;
-            Model.ConstraintReactions(i).Body2(:,tindex) = AccumForceTrq_Bodyj;
-            
-            index = index + NumEquations;
-        end
+        Model = Save_ReactionForceTorque(Model,q,Phi_q,lambda,tindex);
     end
     
 end
 
 Model.time = ((0:NumTimeSteps-1)*Model.simulation.stepSize)';
-
-% %Write visualization results file
-% results = zeros(NumTimeSteps,size(q,1)+1);
-% results(:,1) = Model.time;
-% [~,Index] = sort(Model.BodyIDs);
-% pos = 2;
-% for i = 1:length(Index)
-%     results(:,pos:(pos-1+size(Model.bodies(i).q,1))) = Model.bodies(i).q';
-%     pos = pos+size(Model.bodies(i).q,1);
-% end
-% dlmwrite([Settings.model_name,'.res'],results,'delimiter',',','precision',4)
-% 
-% visualize([Settings.model_name,'.adm'], [Settings.model_name,'.res']);
-
-
 
 
 end
@@ -440,17 +231,32 @@ end
 Model.lambda = zeros(length(lambda),Model.simulation.outputSteps);
 Model.lambda(:,1) = lambda;
 Model.NR = zeros(1,Model.simulation.outputSteps);
+Model.correction_norm = zeros(1,Model.simulation.outputSteps);
+Model.correction = zeros(length(qdd_lambda),Model.simulation.outputSteps);
+Model.CondPsi = zeros(1,Model.simulation.outputSteps);
 
 %Now Solve for the reaction forces/torques for each of the defined
 %constraints
 Model = Save_ReactionForceTorque(Model,q,Phi_q,lambda,1);
 
 
-
-
 % assignin('base','Model',Model);
 % return
 
+Beta0 = 1;
+h = Model.simulation.stepSize;
+MassJPMatrix = calc_MassJPMatrix(Model,q);
+
+[Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q);
+
+Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];       
+
+%Solve for the Applied Force/Torque Vector
+[QA] = calc_QA(Model,t,q,qd);       
+
+%Now solve for the correction to qdd_lambda
+g = [MassJPMatrix*qdd+Phi_q'*lambda-QA;...
+    1/(Beta0^2*h^2)*Phi];
 
 
 %--------------------------------------------------------------------------
@@ -485,19 +291,24 @@ for tindex = 2:NumTimeSteps
             qd = qd_prev(:,1)+h*qdd;
             q = q_prev(:,1)+h*qd;
             Beta0 = 1;
+            BDForder = 1;
         else %Assume BDF order 2 for now, add other orders later
             qd = 4/3*qd_prev(:,1)-1/3*qd_prev(:,2)+2/3*h*qdd;
             q = 4/3*q_prev(:,1)-1/3*q_prev(:,2)+2/3*h*qd;
             Beta0 = 2/3;
+            BDForder = 2;
         end
+        
+%         if(tindex==2)
+%             q = [0;1.41415802570875;-1.41426909685658;0.653286795448272;0.270585222975919;0.653286795448272;0.270585222975918];
+%             qd = [0;-0.0222149167714860;-0.0222131720647998;0.00212513594830588;-0.00513081697442928;0.00212513594830588;-0.00513081697442928];
+%             qdd = [0;-4.44318417174076;-4.44213737887945;0.424972725323208;-1.02614587971205;0.424972725323208;-1.02614587971205];
+%             lambda = [0;346.568365395779;-418.693284447403;1.17720037030895e-14;2.84217094304040e-14;-318.123268816043;857.334798035730];
+%         end
                     
         MassJPMatrix = calc_MassJPMatrix(Model,q);
 
         [Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q);
-        
-%         if(rank(Phi_q)<size(Phi_q,1)) %Model is over constrained
-%             
-%         end
             
         Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];       
 
@@ -506,16 +317,45 @@ for tindex = 2:NumTimeSteps
         
         %Now solve for the correction to qdd_lambda
         g = [MassJPMatrix*qdd+Phi_q'*lambda-QA;...
-            1/(Beta0^2*h^2)*Phi];        
+            1/(Beta0^2*h^2)*Phi];
+        
+%         g2 = calc_g(Model,t,q_prev,qd_prev,qdd,lambda,h,BDForder);
+%         Psi_numeric = zeros(length(g));
+%         delta = 0.0001;
+%         for i = 1:length(qdd_lambda)
+%             qdd_lambda_delta = 0*qdd_lambda;
+%             qdd_lambda_delta(i) = delta;
+%             qdd_lambda_temp = qdd_lambda + qdd_lambda_delta;
+%             qdd_temp = qdd_lambda_temp(1:sum(Model.NumGeneralizedCoordinates));
+%             lambda_temp = qdd_lambda_temp(sum(Model.NumGeneralizedCoordinates)+1:end);
+%             Psi_numeric(:,i) = calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)/delta;
+%         end
+%         correction2 = Psi_numeric\-g;
+        
         correction = Psi\-g;        
         %correction = fsolve(@(x)(Psi*x+g),zeros(size(Psi,1),1));
+        
+%         for i = 1:length(correction)
+%             if(i<=length(qdd))
+%                 if((abs(correction(i))>.1*abs(qdd_lambda(i)))&&(abs(correction(i))>.1))
+%                     correction(i) = .1*abs(qdd_lambda(i))*sign(correction(i));
+%                 end
+%             else
+%                 if(abs(correction(i))>20)
+%                     correction(i) = 10*sign(correction(i));
+%                 end
+%             end
+%         end
+
         
         %Now solve for qdd and lambda
         qdd_lambda = qdd_lambda+correction;
         qdd = qdd_lambda(1:sum(Model.NumGeneralizedCoordinates));
         lambda = qdd_lambda(sum(Model.NumGeneralizedCoordinates)+1:end);
     
-        if(max(abs(correction))<Settings.NewtonRaphsonTol)
+        stop = norm(correction);
+        %if(max(abs(correction))<Settings.NewtonRaphsonTol)
+        if(norm(correction)<Settings.NewtonRaphsonTol)
             break
         end
     end
@@ -554,6 +394,9 @@ for tindex = 2:NumTimeSteps
         Model.g(:,OutputTimePointsCounter) = g;
         Model.gMax(:,OutputTimePointsCounter) = max(g);
         Model.QA(:,OutputTimePointsCounter) = QA;
+        Model.correction_norm(OutputTimePointsCounter) = norm(correction);
+        Model.correction(:,OutputTimePointsCounter) = correction;
+        Model.CondPsi(OutputTimePointsCounter) = cond(Psi);
         
         OutputTimePointsCounter = OutputTimePointsCounter + 1;
         if(mod(OutputTimePointsCounter,100)==1)
@@ -750,37 +593,36 @@ function [Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q)
     Phi(index:end)=[]; %Eliminate any missing constraint equations
 end
 
-function QA = calc_QA(Model,t,q,qd)
-    QA = zeros(size(q));
-    for i = 1:length(Model.forces)
-        if(Model.forces{i}.numbodies == 1)
-            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+function Nu = calc_Nu(Model,t,q)
+    index = 1;
+    Nu = zeros(size(q));
+    for i = 1:length(Model.constraints)
+        if(Model.constraints{i}.numbodies == 1)
+            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
             qi = q(StartIndex_i:EndIndex_i);
-            qdi = qd(StartIndex_i:EndIndex_i);
-
-            QA(StartIndex_i:EndIndex_i) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q(t, qi, qdi);
+        elseif(Model.constraints{i}.body1 == 0) %Connected to ground
+            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
+            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
+            qi = [[0;0;0;1;0;0;0];q(StartIndex_j:EndIndex_j)];
+        elseif(Model.constraints{i}.body2 == 0) %Connected to ground
+            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
+            qi = [q(StartIndex_i:EndIndex_i);[0;0;0;1;0;0;0]];        
         else
-            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
-            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
-            StartIndex_j = Model.bodies(Model.forces{i}.body2).StartIndex;
-            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body2);
+            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
+            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
+            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
             qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
-            qdi = [qd(StartIndex_i:EndIndex_i);qd(StartIndex_j:EndIndex_j)];
-
-            QA(StartIndex_i:EndIndex_i) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q1(t, qi, qdi);
-            QA(StartIndex_j:EndIndex_j) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q2(t, qi, qdi);
         end
-    end
 
-    for i = 1:length(Model.bodies)
-        StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
-        EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
-        qi = q(StartIndex_i:EndIndex_i);
-        qdi = qd(StartIndex_i:EndIndex_i);
+        Nu_c = Model.constraints{i}.Nu(t, qi, []);
+        Nu(index:index+(length(Nu_c)-1)) = Nu_c;
 
-        QA(StartIndex_i+3:EndIndex_i) = QA(StartIndex_i+3:EndIndex_i) + 8*G(qdi(4:7))'*diag(Model.bodies(i).MOI)*G(qdi(4:7)) * qi(4:7);
+        index = index + length(Nu_c);
     end
+    Nu(index:end,:)=[]; %Eliminate any missing constraint equations
 end
 
 function Gamma = calc_Gamma(Model,t,q,qd)
@@ -817,6 +659,62 @@ function Gamma = calc_Gamma(Model,t,q,qd)
         index = index + length(Gamma_c);
     end
     Gamma(index:end,:)=[]; %Eliminate any missing constraint equations
+end
+
+function QA = calc_QA(Model,t,q,qd)
+    QA = zeros(size(q));
+    for i = 1:length(Model.forces)
+        if(Model.forces{i}.numbodies == 1)
+            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+            qi = q(StartIndex_i:EndIndex_i);
+            qdi = qd(StartIndex_i:EndIndex_i);
+
+            QA(StartIndex_i:EndIndex_i) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q(t, qi, qdi);
+        else
+            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+            StartIndex_j = Model.bodies(Model.forces{i}.body2).StartIndex;
+            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body2);
+            qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
+            qdi = [qd(StartIndex_i:EndIndex_i);qd(StartIndex_j:EndIndex_j)];
+
+            QA(StartIndex_i:EndIndex_i) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q1(t, qi, qdi);
+            QA(StartIndex_j:EndIndex_j) = QA(StartIndex_i:EndIndex_i) + Model.forces{i}.Q2(t, qi, qdi);
+        end
+    end
+
+    for i = 1:length(Model.bodies)
+        StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+        EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+        qi = q(StartIndex_i:EndIndex_i);
+        qdi = qd(StartIndex_i:EndIndex_i);
+
+        QA(StartIndex_i+3:EndIndex_i) = QA(StartIndex_i+3:EndIndex_i) + 8*G(qdi(4:7))'*diag(Model.bodies(i).MOI)*G(qdi(4:7)) * qi(4:7);
+    end
+end
+
+function g = calc_g(Model,t,q_prev,qd_prev,qdd,lambda,h,BDForder)
+        if(BDForder == 1)
+            qd = qd_prev(:,1)+h*qdd;
+            q = q_prev(:,1)+h*qd;
+            Beta0 = 1;
+        else %Assume BDF order 2 for now, add other orders later
+            qd = 4/3*qd_prev(:,1)-1/3*qd_prev(:,2)+2/3*h*qdd;
+            q = 4/3*q_prev(:,1)-1/3*q_prev(:,2)+2/3*h*qd;
+            Beta0 = 2/3;
+        end
+        
+        MassJPMatrix = calc_MassJPMatrix(Model,q);
+
+        [Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q);      
+
+        %Solve for the Applied Force/Torque Vector
+        [QA] = calc_QA(Model,t,q,qd);       
+        
+        %Now solve for the correction to qdd_lambda
+        g = [MassJPMatrix*qdd+Phi_q'*lambda-QA;...
+            1/(Beta0^2*h^2)*Phi];
 end
 
 function Model = Save_ReactionForceTorque(Model,q,Phi_q,lambda,Save_Index)
