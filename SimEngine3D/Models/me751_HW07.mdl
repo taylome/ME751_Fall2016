@@ -45,8 +45,8 @@
 		{
 			"Type": "Inverse Dynamics",
 			"tend": 10,
-			"stepSize": 0.001,
-			"outputSteps": 10000
+			"stepSize": 0.005,
+			"outputSteps": 2001
 		}
 	]
 }

@@ -46,8 +46,8 @@
 			"Type": "Dynamics",
 			"Solver": "BDF2",
 			"tend": 10,
-			"stepSize": 0.05,
-			"outputSteps": 200
+			"stepSize": 0.005,
+			"outputSteps": 2001
 		}
 	]
 }
