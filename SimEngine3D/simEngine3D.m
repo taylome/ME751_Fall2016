@@ -843,3 +843,15 @@ function G_Matrix = G(p)
     e = p(2:4);
     G_Matrix = [-e,(-Tilde(e)+e0*eye(3))];
 end
+function T_Matrix = T(a)
+    T_Matrix = [0,-a';...
+                a,-Tilde(a)];
+end
+function K_Matrix = K(a,b)
+    K_Matrix = 2*[a'*b, a'*Tilde(b);...
+                  Tilde(a)*b, a*b'+b*a'-a'*b*eye(3)];
+end
+function mess = Jp_p_pdd_p(J,p,pdd)
+    a = J*G(p)*pdd;
+    mess = 4*(T(a)-G(p)'*J*G(pdd));
+end

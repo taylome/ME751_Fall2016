@@ -57,7 +57,7 @@
 		{
             "name": "Rev02",
             "id": 2,
-            "type": "Spherical",
+            "type": "Revolute",
             "body1": 1,
 			"marker1": [
 				{
