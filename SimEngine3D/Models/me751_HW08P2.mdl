@@ -81,6 +81,7 @@
 		{
 			"Type": "Dynamics",
 			"Solver": "BDF1",
+			"NRMethod": "QuasiFullNR",
 			"tend": 10,
 			"stepSize": 0.005,
 			"outputSteps": 2001

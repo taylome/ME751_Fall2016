@@ -62,6 +62,27 @@ classdef GenForce_PointForce
             
             Q_PntFrc = [F;2*G(pi)'*Tilde(obj.sP1)*A(pi)'*F];
         end
+        
+        function Out = Q_ri(obj,t,q,qd)
+            Out = zeros(7,3);
+        end
+        function Out = Q_rdi(obj,t,q,qd)
+            Out = zeros(7,3);
+        end
+        function Out = Q_pi(obj,t,q,qd)
+            %Calculate Numerically for now
+            delta = 0.0001;
+            Out = zeros(7,4);
+            QBase = Q(obj, t, q, qd);
+            for i = 1:4
+                qdelta = zeros(7,1);
+                qdelta(4+i) = delta;
+                Out(:,i) = (Q(obj, t, q+qdelta, qd)-QBase)/delta;
+            end
+        end        
+        function Out = Q_pdi(obj,t,q,qd)
+            Out = zeros(7,4);
+        end        
     end    
 end
 

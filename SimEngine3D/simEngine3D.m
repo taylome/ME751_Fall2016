@@ -243,6 +243,7 @@ Model = Save_ReactionForceTorque(Model,q,Phi_q,lambda,1);
 % assignin('base','Model',Model);
 % return
 
+%Check to make sure we have a healthy starting point
 Beta0 = 1;
 h = Model.simulation.stepSize;
 MassJPMatrix = calc_MassJPMatrix(Model,q);
@@ -258,6 +259,9 @@ Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
 g = [MassJPMatrix*qdd+Phi_q'*lambda-QA;...
     1/(Beta0^2*h^2)*Phi];
 
+if(max(g)>Settings.NewtonRaphsonTol)
+    msgbox('Check Model Definition File.  Initial solution may not be valid');
+end
 
 %--------------------------------------------------------------------------
 % Now that we've got a good starting point, start into the simulation loop
@@ -284,7 +288,6 @@ for tindex = 2:NumTimeSteps
     
     t = Model.simulation.stepSize * (tindex-1);
     
-    
     %Start the Quasi-NR iterations.    
     for NR = 1:Settings.NewtonRaphsonMaxIterations
         if((tindex<3)||(strcmpi(Model.simulation.Solver,'BDF1')))
@@ -298,20 +301,11 @@ for tindex = 2:NumTimeSteps
             Beta0 = 2/3;
             BDForder = 2;
         end
-        
-%         if(tindex==2)
-%             q = [0;1.41415802570875;-1.41426909685658;0.653286795448272;0.270585222975919;0.653286795448272;0.270585222975918];
-%             qd = [0;-0.0222149167714860;-0.0222131720647998;0.00212513594830588;-0.00513081697442928;0.00212513594830588;-0.00513081697442928];
-%             qdd = [0;-4.44318417174076;-4.44213737887945;0.424972725323208;-1.02614587971205;0.424972725323208;-1.02614587971205];
-%             lambda = [0;346.568365395779;-418.693284447403;1.17720037030895e-14;2.84217094304040e-14;-318.123268816043;857.334798035730];
-%         end
                     
         MassJPMatrix = calc_MassJPMatrix(Model,q);
 
         [Phi,Phi_q] = calc_Phi_Phi_q(Model,t,q);
             
-        Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];       
-
         %Solve for the Applied Force/Torque Vector
         [QA] = calc_QA(Model,t,q,qd);       
         
@@ -319,47 +313,63 @@ for tindex = 2:NumTimeSteps
         g = [MassJPMatrix*qdd+Phi_q'*lambda-QA;...
             1/(Beta0^2*h^2)*Phi];
         
-%         g2 = calc_g(Model,t,q_prev,qd_prev,qdd,lambda,h,BDForder);
-%         Psi_numeric = zeros(length(g));
-%         delta = 0.0001;
-%         for i = 1:length(qdd_lambda)
-%             qdd_lambda_delta = 0*qdd_lambda;
-%             qdd_lambda_delta(i) = delta;
-%             qdd_lambda_temp = qdd_lambda + qdd_lambda_delta;
-%             qdd_temp = qdd_lambda_temp(1:sum(Model.NumGeneralizedCoordinates));
-%             lambda_temp = qdd_lambda_temp(sum(Model.NumGeneralizedCoordinates)+1:end);
-%             Psi_numeric(:,i) = calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)/delta;
-%         end
-%         correction2 = Psi_numeric\-g;
-        
+        switch(lower(Model.simulation.NRMethod))
+            case lower('QuasiFullNR')
+                Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];            
+            case lower('QuasiModifiedNR')
+                if(NR == 1)
+                    Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
+                end
+            case lower('NumericFullNR')
+                Psi = zeros(length(g));
+                delta = 0.0001;
+                for i = 1:length(qdd_lambda)
+                    qdd_lambda_delta = 0*qdd_lambda;
+                    qdd_lambda_delta(i) = delta;
+                    qdd_lambda_temp = qdd_lambda + qdd_lambda_delta;
+                    qdd_temp = qdd_lambda_temp(1:sum(Model.NumGeneralizedCoordinates));
+                    lambda_temp = qdd_lambda_temp(sum(Model.NumGeneralizedCoordinates)+1:end);
+                    Psi(:,i) = (calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)-g)/delta;
+                end
+            case lower('NumericModifiedNR')
+                if(NR == 1)
+                    Psi = zeros(length(g));
+                    delta = 0.0001;
+                    for i = 1:length(qdd_lambda)
+                        qdd_lambda_delta = 0*qdd_lambda;
+                        qdd_lambda_delta(i) = delta;
+                        qdd_lambda_temp = qdd_lambda + qdd_lambda_delta;
+                        qdd_temp = qdd_lambda_temp(1:sum(Model.NumGeneralizedCoordinates));
+                        lambda_temp = qdd_lambda_temp(sum(Model.NumGeneralizedCoordinates)+1:end);
+                        Psi(:,i) = (calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)-g)/delta;
+                    end
+                end
+            case lower('FullNR')
+                error('Work in Progress');
+                %Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
+            case lower('ModifiedNR')
+                error('Work in Progress');
+                if(NR == 1)
+                    %Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
+                end
+            otherwise
+                error('Unknown NR Method Type');
+        end
+                
+            
         correction = Psi\-g;        
-        %correction = fsolve(@(x)(Psi*x+g),zeros(size(Psi,1),1));
-        
-%         for i = 1:length(correction)
-%             if(i<=length(qdd))
-%                 if((abs(correction(i))>.1*abs(qdd_lambda(i)))&&(abs(correction(i))>.1))
-%                     correction(i) = .1*abs(qdd_lambda(i))*sign(correction(i));
-%                 end
-%             else
-%                 if(abs(correction(i))>20)
-%                     correction(i) = 10*sign(correction(i));
-%                 end
-%             end
-%         end
-
         
         %Now solve for qdd and lambda
         qdd_lambda = qdd_lambda+correction;
         qdd = qdd_lambda(1:sum(Model.NumGeneralizedCoordinates));
         lambda = qdd_lambda(sum(Model.NumGeneralizedCoordinates)+1:end);
     
-        stop = norm(correction);
+        %stop = norm(correction);
         %if(max(abs(correction))<Settings.NewtonRaphsonTol)
         if(norm(correction)<Settings.NewtonRaphsonTol)
             break
         end
     end
-
     
     %Calcuate the final update to q & qd based on qdd
     if((tindex<3)||(strcmpi(Model.simulation.Solver,'BDF1')))
