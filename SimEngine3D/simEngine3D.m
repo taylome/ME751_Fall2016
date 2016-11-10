@@ -314,25 +314,12 @@ for tindex = 2:NumTimeSteps
             1/(Beta0^2*h^2)*Phi];
         
         switch(lower(Model.simulation.NRMethod))
-            case lower('QuasiFullNR')
-                Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];            
-            case lower('QuasiModifiedNR')
-                if(NR == 1)
+            case {lower('QuasiFullNR'),lower('QuasiModifiedNR')}
+                if((NR == 1) || strcmpi(Model.simulation.NRMethod,'QuasiFullNR'))
                     Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
                 end
-            case lower('NumericFullNR')
-                Psi = zeros(length(g));
-                delta = 0.0001;
-                for i = 1:length(qdd_lambda)
-                    qdd_lambda_delta = 0*qdd_lambda;
-                    qdd_lambda_delta(i) = delta;
-                    qdd_lambda_temp = qdd_lambda + qdd_lambda_delta;
-                    qdd_temp = qdd_lambda_temp(1:sum(Model.NumGeneralizedCoordinates));
-                    lambda_temp = qdd_lambda_temp(sum(Model.NumGeneralizedCoordinates)+1:end);
-                    Psi(:,i) = (calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)-g)/delta;
-                end
-            case lower('NumericModifiedNR')
-                if(NR == 1)
+            case {lower('NumericFullNR'),lower('NumericModifiedNR')}
+                if((NR == 1)||strcmpi(Model.simulation.NRMethod,'NumericFullNR'))
                     Psi = zeros(length(g));
                     delta = 0.0001;
                     for i = 1:length(qdd_lambda)
@@ -344,13 +331,91 @@ for tindex = 2:NumTimeSteps
                         Psi(:,i) = (calc_g(Model,t,q_prev,qd_prev,qdd_temp,lambda_temp,h,BDForder)-g)/delta;
                     end
                 end
-            case lower('FullNR')
-                error('Work in Progress');
-                %Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
-            case lower('ModifiedNR')
-                error('Work in Progress');
-                if(NR == 1)
-                    %Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
+            case {lower('FullNR'),lower('ModifiedNR')}
+                if((NR == 1)||strcmpi(Model.simulation.NRMethod,'FullNR'))
+                    Psi = [MassJPMatrix,Phi_q';Phi_q,zeros(size(Phi_q,1))];
+
+                    %Add in h^2*Bo^2*[Jp(pn)pdd]_p
+                    for i = 1:length(Model.bodies)
+                        qi = q(Model.bodies(i).StartIndex:Model.bodies(i).StartIndex-1+Model.NumGeneralizedCoordinates(i));
+                        qddi = qdd(Model.bodies(i).StartIndex:Model.bodies(i).StartIndex-1+Model.NumGeneralizedCoordinates(i));
+                        J = diag(Model.bodies(i).MOI);
+
+                        Psi((4+7*(i-1)):(7+7*(i-1)),(4+7*(i-1)):(7+7*(i-1))) = Psi((4+7*(i-1)):(7+7*(i-1)),(4+7*(i-1)):(7+7*(i-1))) + ...
+                            (Beta0^2*h^2)*Jp_p_pdd_p(J,qi(4:7),qddi(4:7));
+                    end
+
+                    %Add in Phi_q_q terms
+                    index = 1;
+                    for i = 1:length(Model.constraints)
+                        if(Model.constraints{i}.numbodies == 1)
+                            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+                            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
+                            qi = q(StartIndex_i:EndIndex_i);
+
+                            Phi_c = Model.constraints{i}.Phi(t, qi, []);
+
+                            lambdai = lambda(index:index-1+length(Phi_c));
+
+                            Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) = Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qi_lambda_qi(qi,lambdai);
+
+                            index = index + length(Phi_c);
+                        elseif(Model.constraints{i}.body1 == 0) %Connected to ground
+                            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
+                            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
+                            qi = [[0;0;0;1;0;0;0];q(StartIndex_j:EndIndex_j)];
+
+                            Phi_c = Model.constraints{i}.Phi(t, qi, []);
+
+                            lambdai = lambda(index:index-1+length(Phi_c));
+
+                            Psi(StartIndex_j:EndIndex_j,StartIndex_j:EndIndex_j) = Psi(StartIndex_j:EndIndex_j,StartIndex_j:EndIndex_j) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qj_lambda_qj(qi,lambdai);
+
+                            index = index + length(Phi_c);
+                        elseif(Model.constraints{i}.body2 == 0) %Connected to ground
+                            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+                            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
+                            qi = [q(StartIndex_i:EndIndex_i);[0;0;0;1;0;0;0]];
+
+                            Phi_c = Model.constraints{i}.Phi(t, qi, []);
+
+                            lambdai = lambda(index:index-1+length(Phi_c));
+
+                            Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) = Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qi_lambda_qi(qi,lambdai);
+
+                            index = index + length(Phi_c);                
+                        else
+                            StartIndex_i = Model.bodies(Model.constraints{i}.body1).StartIndex;
+                            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body1);
+                            StartIndex_j = Model.bodies(Model.constraints{i}.body2).StartIndex;
+                            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.constraints{i}.body2);
+                            qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
+
+                            Phi_c = Model.constraints{i}.Phi(t, qi, []);
+
+                            lambdai = lambda(index:index-1+length(Phi_c));
+
+                            Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) = Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qi_lambda_qi(qi,lambdai);
+                            Psi(StartIndex_i:EndIndex_i,StartIndex_j:EndIndex_j) = Psi(StartIndex_i:EndIndex_i,StartIndex_j:EndIndex_j) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qi_lambda_qj(qi,lambdai);
+                            Psi(StartIndex_j:EndIndex_j,StartIndex_i:EndIndex_i) = Psi(StartIndex_j:EndIndex_j,StartIndex_i:EndIndex_i) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qj_lambda_qi(qi,lambdai);
+                            Psi(StartIndex_j:EndIndex_j,StartIndex_j:EndIndex_j) = Psi(StartIndex_j:EndIndex_j,StartIndex_j:EndIndex_j) + (Beta0^2*h^2)*Model.constraints{i}.Phi_qj_lambda_qj(qi,lambdai);
+
+                            index = index + length(Phi_c);
+                        end
+                    end
+
+                    %Add in Force Terms (numerically calculate derivatives
+                    %since functions might be unknown.
+                    QA_q = zeros(size(QA));
+                    QA_qd = zeros(size(QA));
+                    delta = 0.0001;
+                    for i = 1:length(q)
+                        q_delta = 0*q;
+                        q_delta(i) = delta;
+                        QA_q(:,i) = (calc_QA(Model,t,q+q_delta,qd)-QA)/delta;
+                        QA_qd(:,i) = (calc_QA(Model,t,q,qd+q_delta)-QA)/delta;
+                    end
+                    Psi(1:length(q),1:length(q)) = Psi(1:length(q),1:length(q)) - (Beta0^2*h^2)*(QA_q+QA_qd);
                 end
             otherwise
                 error('Unknown NR Method Type');

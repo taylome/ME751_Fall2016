@@ -87,6 +87,7 @@ classdef Constraint_Spherical
                 obj.has_fun = false;
             end
         end
+        
         function Phi_Rev = Phi(obj, t, q, qd)
             Phi_Rev = [obj.Constraint_CD_1.Phi( t, q, qd);...
                        obj.Constraint_CD_2.Phi( t, q, qd);...
@@ -100,6 +101,7 @@ classdef Constraint_Spherical
            
             end
         end
+        
         function Phi_qri_Rev = Phi_qri(obj, t, q, qd)
             Phi_qri_Rev = [obj.Constraint_CD_1.Phi_qri( t, q, qd);...
                            obj.Constraint_CD_2.Phi_qri( t, q, qd);...
@@ -159,7 +161,157 @@ classdef Constraint_Spherical
         end
         function Phi_qj_Rev = Phi_qj(obj, t, q, qd)
             Phi_qj_Rev = [obj.Phi_qrj(t, q, qd),obj.Phi_qpj(t, q, qd)];
-        end          
+        end  
+        
+        function Out = Phi_qri_lambda_qri(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qri_lambda_qri( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qri_lambda_qri( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qri_lambda_qri( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qri_lambda_qrj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qri_lambda_qrj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qri_lambda_qrj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qri_lambda_qrj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qri_lambda_qpi(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qri_lambda_qpi( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qri_lambda_qpi( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qri_lambda_qpi( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qri_lambda_qpj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qri_lambda_qpj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qri_lambda_qpj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qri_lambda_qpj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+
+        function Out = Phi_qrj_lambda_qri(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qrj_lambda_qri( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qrj_lambda_qri( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qrj_lambda_qri( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qrj_lambda_qrj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qrj_lambda_qrj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qrj_lambda_qrj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qrj_lambda_qrj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qrj_lambda_qpi(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qrj_lambda_qpi( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qrj_lambda_qpi( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qrj_lambda_qpi( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qrj_lambda_qpj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qrj_lambda_qpj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qrj_lambda_qpj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qrj_lambda_qpj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        
+        function Out = Phi_qpi_lambda_qri(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpi_lambda_qri( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpi_lambda_qri( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpi_lambda_qri( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qpi_lambda_qrj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpi_lambda_qrj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpi_lambda_qrj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpi_lambda_qrj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qpi_lambda_qpi(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpi_lambda_qpi( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpi_lambda_qpi( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpi_lambda_qpi( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        function Out = Phi_qpi_lambda_qpj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpi_lambda_qpj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpi_lambda_qpj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpi_lambda_qpj( q,lambda(3));
+            if(obj.has_fun)
+                  
+            end
+        end
+        
+        function Out = Phi_qpj_lambda_qri(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpj_lambda_qri( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpj_lambda_qri( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpj_lambda_qri( q,lambda(3));
+            if(obj.has_fun)
+
+            end
+        end
+        function Out = Phi_qpj_lambda_qrj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpj_lambda_qrj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpj_lambda_qrj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpj_lambda_qrj( q,lambda(3));
+            if(obj.has_fun)
+                
+            end
+        end
+        function Out = Phi_qpj_lambda_qpi(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpj_lambda_qpi( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpj_lambda_qpi( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpj_lambda_qpi( q,lambda(3));
+            if(obj.has_fun)
+                
+            end
+        end
+        function Out = Phi_qpj_lambda_qpj(obj,q,lambda)
+            Out = obj.Constraint_CD_1.Phi_qpj_lambda_qpj( q,lambda(1)) + ...
+                  obj.Constraint_CD_2.Phi_qpj_lambda_qpj( q,lambda(2)) + ...
+                  obj.Constraint_CD_3.Phi_qpj_lambda_qpj( q,lambda(3));
+            if(obj.has_fun)
+
+            end
+        end
+
+        function Out = Phi_qi_lambda_qi(obj,q,lambda)
+            Out = [obj.Phi_qri_lambda_qri(q,lambda),obj.Phi_qri_lambda_qpi(q,lambda);...
+                   obj.Phi_qpi_lambda_qri(q,lambda),obj.Phi_qpi_lambda_qpi(q,lambda)];
+        end
+        function Out = Phi_qi_lambda_qj(obj,q,lambda)
+            Out = [obj.Phi_qri_lambda_qrj(q,lambda),obj.Phi_qri_lambda_qpj(q,lambda);...
+                   obj.Phi_qpi_lambda_qrj(q,lambda),obj.Phi_qpi_lambda_qpj(q,lambda)];
+        end
+        function Out = Phi_qj_lambda_qi(obj,q,lambda)
+            Out = [obj.Phi_qrj_lambda_qri(q,lambda),obj.Phi_qrj_lambda_qpi(q,lambda);...
+                   obj.Phi_qpj_lambda_qri(q,lambda),obj.Phi_qpj_lambda_qpi(q,lambda)];
+        end
+        function Out = Phi_qj_lambda_qj(obj,q,lambda)
+            Out = [obj.Phi_qrj_lambda_qrj(q,lambda),obj.Phi_qrj_lambda_qpj(q,lambda);...
+                   obj.Phi_qpj_lambda_qrj(q,lambda),obj.Phi_qpj_lambda_qpj(q,lambda)];
+        end
+        
         function Nu_Rev = Nu(obj, t, q, qd)
             Nu_Rev = [obj.Constraint_CD_1.Nu( t, q, qd);...
                            obj.Constraint_CD_2.Nu( t, q, qd);...

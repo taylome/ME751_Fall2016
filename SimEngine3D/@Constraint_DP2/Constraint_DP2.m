@@ -216,6 +216,23 @@ classdef Constraint_DP2
             
             Out = lambda*K(obj.sP2,A(pi)*obj.aP1);
         end                
+
+        function Out = Phi_qi_lambda_qi(obj,q,lambda)
+            Out = [Phi_qri_lambda_qri(obj,q,lambda),Phi_qri_lambda_qpi(obj,q,lambda);...
+                   Phi_qpi_lambda_qri(obj,q,lambda),Phi_qpi_lambda_qpi(obj,q,lambda)];
+        end
+        function Out = Phi_qi_lambda_qj(obj,q,lambda)
+            Out = [Phi_qri_lambda_qrj(obj,q,lambda),Phi_qri_lambda_qpj(obj,q,lambda);...
+                   Phi_qpi_lambda_qrj(obj,q,lambda),Phi_qpi_lambda_qpj(obj,q,lambda)];
+        end
+        function Out = Phi_qj_lambda_qi(obj,q,lambda)
+            Out = [Phi_qrj_lambda_qri(obj,q,lambda),Phi_qrj_lambda_qpi(obj,q,lambda);...
+                   Phi_qpj_lambda_qri(obj,q,lambda),Phi_qpj_lambda_qpi(obj,q,lambda)];
+        end
+        function Out = Phi_qj_lambda_qj(obj,q,lambda)
+            Out = [Phi_qrj_lambda_qrj(obj,q,lambda),Phi_qrj_lambda_qpj(obj,q,lambda);...
+                   Phi_qpj_lambda_qrj(obj,q,lambda),Phi_qpj_lambda_qpj(obj,q,lambda)];
+        end
         
         function Nu_DP2 = Nu(obj, t, ~, ~)
             %Nu_DP2 = f_dot(t)

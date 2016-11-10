@@ -62,6 +62,11 @@ classdef Constraint_P
             
             Out = lambda*2*eye(4);
         end
+
+        function Out = Phi_qi_lambda_qi(obj,q,lambda)
+            Out = [Phi_qri_lambda_qri(obj,q,lambda),Phi_qri_lambda_qpi(obj,q,lambda);...
+                   Phi_qpi_lambda_qri(obj,q,lambda),Phi_qpi_lambda_qpi(obj,q,lambda)];
+        end       
         
         function Nu_P = Nu(obj, ~, ~, ~)
             Nu_P = 0;    
