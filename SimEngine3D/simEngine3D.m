@@ -12,7 +12,7 @@ function Model = simEngine3D(model_name)
 tic
 if(nargin<1)
     [pathstr,~,~] = fileparts(mfilename('fullpath'));
-    model_name = [pathstr,'\models\me751_HW08P2.mdl'];
+    model_name = [pathstr,'\models\me751_HW08P1.mdl'];
 end
 
 %--------------------------------------------------------------------------
@@ -404,18 +404,52 @@ for tindex = 2:NumTimeSteps
                         end
                     end
 
-                    %Add in Force Terms (numerically calculate derivatives
-                    %since functions might be unknown.
-                    QA_q = zeros(size(QA));
-                    QA_qd = zeros(size(QA));
-                    delta = 0.0001;
-                    for i = 1:length(q)
-                        q_delta = 0*q;
-                        q_delta(i) = delta;
-                        QA_q(:,i) = (calc_QA(Model,t,q+q_delta,qd)-QA)/delta;
-                        QA_qd(:,i) = (calc_QA(Model,t,q,qd+q_delta)-QA)/delta;
+                    %Add in Force Terms 
+                    for i = 1:length(Model.bodies)
+                        StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+                        EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+                        qi = q(StartIndex_i:EndIndex_i);
+                        qdi = qd(StartIndex_i:EndIndex_i);
+
+                        Psi(StartIndex_i+3:EndIndex_i,StartIndex_i+3:EndIndex_i) = Psi(StartIndex_i+3:EndIndex_i,StartIndex_i+3:EndIndex_i) ...
+                            -(Beta0^2*h^2)*(8*G(qdi(4:7))'*diag(Model.bodies(i).MOI)*G(qdi(4:7))) ...
+                            -(Beta0^2*h^2)*(8*(T(diag(Model.bodies(i).MOI)*G(qdi(4:7))*qi(4:7))-G(qdi(4:7))'*diag(Model.bodies(i).MOI)*G(qi(4:7))));
                     end
-                    Psi(1:length(q),1:length(q)) = Psi(1:length(q),1:length(q)) - (Beta0^2*h^2)*(QA_q+QA_qd);
+                    
+                    for i = 1:length(Model.forces)
+                        if(Model.forces{i}.numbodies == 1)
+                            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+                            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+                            qi = q(StartIndex_i:EndIndex_i);
+                            qdi = qd(StartIndex_i:EndIndex_i);
+
+                            Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i) = Psi(StartIndex_i:EndIndex_i,StartIndex_i:EndIndex_i)...
+                                -(Beta0^2*h^2)*[Model.forces{i}.Q_ri(t,qi,qdi),Model.forces{i}.Q_pi(t,qi,qdi)]...
+                                -(Beta0^2*h^2)*[Model.forces{i}.Q_rdi(t,qi,qdi),Model.forces{i}.Q_pdi(t,qi,qdi)];
+                        else
+                            StartIndex_i = Model.bodies(Model.forces{i}.body1).StartIndex;
+                            EndIndex_i = StartIndex_i-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body1);
+                            StartIndex_j = Model.bodies(Model.forces{i}.body2).StartIndex;
+                            EndIndex_j = StartIndex_j-1+Model.NumGeneralizedCoordinates(Model.forces{i}.body2);
+                            qi = [q(StartIndex_i:EndIndex_i);q(StartIndex_j:EndIndex_j)];
+                            qdi = [qd(StartIndex_i:EndIndex_i);qd(StartIndex_j:EndIndex_j)];
+
+                            error('Two bodies force section still needs to be written');
+                        end
+                    end
+                    
+%                     %Add in Force Terms (numerically calculate derivatives
+%                     %since functions might be unknown.
+%                     QA_q = zeros(size(QA));
+%                     QA_qd = zeros(size(QA));
+%                     delta = 0.0001;
+%                     for i = 1:length(q)
+%                         q_delta = 0*q;
+%                         q_delta(i) = delta;
+%                         QA_q(:,i) = (calc_QA(Model,t,q+q_delta,qd)-QA)/delta;
+%                         QA_qd(:,i) = (calc_QA(Model,t,q,qd+q_delta)-QA)/delta;
+%                     end
+%                     Psi(1:length(q),1:length(q)) = Psi(1:length(q),1:length(q)) - (Beta0^2*h^2)*(QA_q+QA_qd);
                 end
             otherwise
                 error('Unknown NR Method Type');

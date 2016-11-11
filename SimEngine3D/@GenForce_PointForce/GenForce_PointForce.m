@@ -76,8 +76,8 @@ classdef GenForce_PointForce
             QBase = Q(obj, t, q, qd);
             for i = 1:4
                 qdelta = zeros(7,1);
-                qdelta(4+i) = delta;
-                Out(:,i) = (Q(obj, t, q+qdelta, qd)-QBase)/delta;
+                qdelta(3+i) = delta;
+                Out(:,i) = (obj.Q(t, q+qdelta, qd)-QBase)/delta;
             end
         end        
         function Out = Q_pdi(obj,t,q,qd)
